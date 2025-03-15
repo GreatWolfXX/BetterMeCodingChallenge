@@ -65,6 +65,7 @@ class MoviesViewModel @Inject constructor(
                 dislikeMovieUseCase(movie.id)
             }
         }
+        updateMovieInSelection(movie)
     }
 
     fun openMovieDetails(movie: Movie) {
@@ -73,5 +74,11 @@ class MoviesViewModel @Inject constructor(
 
     fun closeMovieDetails() {
         selectedMovieMutableFlow.value = null
+    }
+
+    private fun updateMovieInSelection(movie: Movie) {
+        if (selectedMovieMutableFlow.value?.id == movie.id) {
+            selectedMovieMutableFlow.value = movie.copy(liked = !movie.liked)
+        }
     }
 }

@@ -9,16 +9,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,16 +35,19 @@ import coil3.compose.AsyncImage
 @Composable
 fun MovieDetailsBottomSheet(
     movie: Movie?,
+    onLikeClicked: (Movie) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
+
     movie?.let {
         ModalBottomSheet(
             onDismissRequest = onDismiss,
             sheetState = sheetState
         ) {
             MovieDetailsItem(
-                movie
+                movie,
+                onLikeClicked = onLikeClicked
             )
         }
     }
@@ -50,7 +55,8 @@ fun MovieDetailsBottomSheet(
 
 @Composable
 private fun MovieDetailsItem(
-    movie: Movie
+    movie: Movie,
+    onLikeClicked: (Movie) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -70,6 +76,22 @@ private fun MovieDetailsItem(
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.Gray)
             )
+
+            IconButton(
+                modifier = Modifier
+                    .padding(end = 8.dp, bottom = 8.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                onClick = {
+                    onLikeClicked(movie)
+                }
+            ) {
+                Icon(
+                    imageVector = if (movie.liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Like Button",
+                    tint = if (movie.liked) Color.Red else Color.Gray
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -102,7 +124,7 @@ private fun PreviewsMovieDetailsBottomSheet() {
     )
     MovieDetailsBottomSheet(
         movie = movie,
-//        onLikeClicked = {},
+        onLikeClicked = {},
         onDismiss = {}
     )
 }

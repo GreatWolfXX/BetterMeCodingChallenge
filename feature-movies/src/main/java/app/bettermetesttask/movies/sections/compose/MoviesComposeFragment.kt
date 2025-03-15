@@ -131,6 +131,9 @@ private fun MoviesComposeScreen(
                 }
 
                 MovieDetailsBottomSheet(selectedMovie,
+                    onLikeClicked = { movie ->
+                        likeMovie(movie)
+                    },
                     onDismiss = {
                         closeMovieDetails()
                     }
