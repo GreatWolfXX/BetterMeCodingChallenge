@@ -4,13 +4,18 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +56,7 @@ import app.bettermetesttask.featurecommon.injection.viewmodel.SimpleViewModelPro
 import app.bettermetesttask.movies.sections.MoviesState
 import app.bettermetesttask.movies.sections.MoviesViewModel
 import coil3.compose.AsyncImage
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -71,11 +82,19 @@ class MoviesComposeFragment : Fragment(), Injectable {
             )
             setContent {
                 val viewState by viewModel.moviesStateFlow.collectAsState()
-                MoviesComposeScreen(viewState, likeMovie = { movie ->
-                    viewModel.likeMovie(movie)
-                }, viewLoaded = {
-                    viewModel.loadMovies()
-                })
+                val selectedMovie by viewModel.selectedMovieStateFlow.collectAsState()
+
+                MoviesComposeScreen(viewState,
+                    selectedMovie = selectedMovie,
+                    likeMovie = { movie ->
+                        viewModel.likeMovie(movie)
+                    }, viewLoaded = {
+                        viewModel.loadMovies()
+                    }, openMovieDetails = { movie ->
+                        viewModel.openMovieDetails(movie)
+                    }, closeMovieDetails = {
+                        viewModel.closeMovieDetails()
+                    })
             }
         }
     }
@@ -84,7 +103,10 @@ class MoviesComposeFragment : Fragment(), Injectable {
 @Composable
 private fun MoviesComposeScreen(
     moviesState: MoviesState,
+    selectedMovie: Movie?,
     likeMovie: (Movie) -> Unit,
+    openMovieDetails: (Movie) -> Unit,
+    closeMovieDetails: () -> Unit,
     viewLoaded: () -> Unit
 ) {
     viewLoaded()
@@ -98,11 +120,33 @@ private fun MoviesComposeScreen(
             is MoviesState.Loaded -> {
                 LazyColumn {
                     items(moviesState.movies) { item ->
-                        MovieItem(item, onLikeClicked = {
-                            likeMovie(item)
-                        })
+                        MovieItem(
+                            item, onLikeClicked = {
+                                likeMovie(item)
+                            }, onCardClicked = {
+                                openMovieDetails(item)
+                            }
+                        )
                     }
                 }
+
+                MovieDetailsBottomSheet(selectedMovie,
+                    onLikeClicked = { movie ->
+                        likeMovie(movie)
+                    },
+                    onDismiss = {
+                        closeMovieDetails()
+                    }
+                )
+            }
+
+            is MoviesState.Error -> {
+                ErrorContainer(
+                    moviesState.message,
+                    tryAgain = {
+                        viewLoaded()
+                    }
+                )
             }
 
             MoviesState.Loading -> {
@@ -118,11 +162,18 @@ private fun MoviesComposeScreen(
 }
 
 @Composable
-fun MovieItem(movie: Movie, onLikeClicked: (Int) -> Unit) {
+private fun MovieItem(
+    movie: Movie,
+    onLikeClicked: (Int) -> Unit,
+    onCardClicked: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(8.dp)
+            .clickable {
+                onCardClicked()
+            },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
@@ -162,17 +213,45 @@ fun MovieItem(movie: Movie, onLikeClicked: (Int) -> Unit) {
 }
 
 @Composable
+private fun ErrorContainer(
+    errorMessage: String,
+    tryAgain: () -> Unit
+) {
+    Column (
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = errorMessage, fontSize = 18.sp, color = Color.Red)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = tryAgain,
+            border = BorderStroke(1.dp, Color.Black),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White
+            )
+        ) {
+            Text(text = "Refresh", fontSize = 18.sp, color = Color.Black)
+        }
+    }
+}
+
+@Composable
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
 private fun PreviewsMoviesComposeScreen() {
-    MoviesComposeScreen(MoviesState.Loaded(
-        List(20) { index ->
-            Movie(
-                index,
-                "Title $index",
-                "Overview $index",
-                null,
-                liked = index % 2 == 0,
-            )
-        }
-    ), likeMovie = {}, viewLoaded = {})
+    MoviesComposeScreen(
+        MoviesState.Loaded(
+            List(20) { index ->
+                Movie(
+                    index,
+                    "Title $index",
+                    "Overview $index",
+                    null,
+                    liked = index % 2 == 0,
+                )
+            },
+        ),
+        selectedMovie = null,
+        likeMovie = {}, openMovieDetails = {}, closeMovieDetails = {},
+        viewLoaded = {})
 }
