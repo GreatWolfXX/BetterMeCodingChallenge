@@ -13,23 +13,28 @@ class ObserveMoviesUseCase @Inject constructor(
 ) {
 
     suspend operator fun invoke(): Flow<Result<List<Movie>>> {
-        return when (val result = repository.getMovies()) {
-            is Result.Success -> {
-                repository.observeLikedMovieIds()
-                    .map { likedMoviesIds ->
-                        val movies = result.data.map {
-                            if (likedMoviesIds.contains(it.id)) {
-                                it.copy(liked = true)
-                            } else {
-                                it
+        try {
+            return when (val result = repository.getMovies()) {
+                is Result.Success -> {
+                    repository.observeLikedMovieIds()
+                        .map { likedMoviesIds ->
+                            val movies = result.data.map {
+                                if (likedMoviesIds.contains(it.id)) {
+                                    it.copy(liked = true)
+                                } else {
+                                    it
+                                }
                             }
+                            Result.Success(movies)
                         }
-                        Result.Success(movies)
-                    }
+                }
+
+                is Result.Error -> {
+                    flowOf(result)
+                }
             }
-            is Result.Error -> {
-                flowOf(result)
-            }
+        } catch (ex: Exception) {
+            return flowOf(Result.Error(ex))
         }
     }
 }

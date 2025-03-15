@@ -1,6 +1,6 @@
 package app.bettermetesttask.datamovies.repository.stores
 
-import app.bettermetesttask.domainmovies.entries.Movie
+import app.bettermetesttask.datamovies.database.entities.MovieEntity
 
 object MoviesFactory {
     private val moviePosterUrls = listOf(
@@ -26,9 +26,9 @@ object MoviesFactory {
         "https://www.themoviedb.org/t/p/w440_and_h660_face/oPxnRhyAIzJKGUEdSiwTJQBa3NM.jpg"
     )
 
-    fun createMoviesList(): List<Movie> {
+    fun createMoviesList(): List<MovieEntity> {
         return moviePosterUrls.mapIndexed { index, posterUrl ->
-            Movie(
+            MovieEntity(
                 id = index,
                 title = "Movie #$index",
                 description = "Some movie description #$index",
